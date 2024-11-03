@@ -1,7 +1,7 @@
 from fastapi.params import Depends
 from fastapi.routing import APIRouter
-from fastapi.
-from auth.src.auth.schemas import UserSchemas
+
+from auth_service.src.auth.schemas import UserSchemas
 
 auth = APIRouter(prefix="/auth")
 
