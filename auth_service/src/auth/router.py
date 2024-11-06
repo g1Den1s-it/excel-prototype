@@ -1,10 +1,14 @@
+from alembic.util import status
 from fastapi.params import Depends
 from fastapi.routing import APIRouter
 from fastapi import status
 
 from src.auth.schemas import UserSchemas
 
-from src.auth.dependencies import valid_create_user
+from src.auth.dependencies import valid_create_user, valid_login
+
+from src.auth.schemas import TokenSchemas
+
 
 auth = APIRouter(prefix="/auth")
 
@@ -15,8 +19,13 @@ auth = APIRouter(prefix="/auth")
             status_code=status.HTTP_201_CREATED)
 async def create_user(user: UserSchemas = Depends(valid_create_user)):
     return user
-# Read
+
+# Login
+@auth.post("/login/",
+          response_model=TokenSchemas,
+          status_code=status.HTTP_200_OK)
+def login(user: UserSchemas = Depends(valid_login)):
+    return user
 # Update
 # Delete
-# Login
 # logout

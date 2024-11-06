@@ -25,3 +25,9 @@ class UserSchemas(BaseModel):
     #             raise RegisterValidateException()
     #
     #     return value
+
+
+class TokenSchemas(BaseModel):
+    access_token: str | None = Field(None)
+    refresh_token: str
+
