@@ -39,3 +39,13 @@ class TestUser:
 
         assert res.status_code == 200
         assert res.json().get("username") == "new-test-username"
+
+
+    @pytest.mark.asyncio
+    async def test_check_token(self, ac: AsyncClient):
+        res = await ac.post("/auth/check-token/",
+                            json={"access_token": TestUser.login_response.get("access_token")})
+
+        assert res.status_code == 200
+        assert res.json().get("access_token")['valid'] == True
+        assert res.json().get("refresh_token")['valid'] == False
