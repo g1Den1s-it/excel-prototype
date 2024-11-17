@@ -32,12 +32,12 @@ async def valid_login(user_data: UserSchemas,
     if not user_data.email  and not user_data.password:
         raise FieldRequiredException("'Email' and 'Password' are required!")
 
-    user: UserSchemas | None = await get_user_by_email(user_data, db)
+    user: UserSchemas | None = await get_user_by_email(user_data.email, db)
 
     if not user:
         raise InvalidEmailException()
 
-    if not PasswordHax.verify_password(user_data, user.password):
+    if not PasswordHax.verify_password(user_data.password, user.password):
         return InvalidPasswordException()
 
     tokens = TokenSchemas()

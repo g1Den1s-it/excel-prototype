@@ -3,8 +3,8 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker, AsyncEngine
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker, AsyncEngine, AsyncConnection
+from sqlalchemy.orm import declarative_base
 
 load_dotenv()
 
@@ -15,12 +15,24 @@ SQL_DATABASE_URL = (f"postgresql+asyncpg://"
                     f"{os.getenv('DB_PORT')}/"
                     f"{os.getenv('DB_NAME')}")
 
+
 class AsyncDatabaseSessionManager:
-    def __init__(self):
-        self._engine = create_async_engine(SQL_DATABASE_URL, future=True, echo=True)
+    def __init__(self, sql_url):
+        self._engine = create_async_engine(sql_url, future=True, echo=True)
         self._session = async_sessionmaker(
             self._engine, expire_on_commit=False, class_= AsyncSession
         )
+
+
+    @asynccontextmanager
+    async def connect(self) -> AsyncIterator[AsyncConnection]:
+        async with self._engine.begin() as conn:
+            try:
+                yield conn
+            except Exception as e:
+                await conn.rollback()
+                raise e
+
 
     @asynccontextmanager
     async def session(self) -> AsyncIterator[AsyncSession]:
@@ -39,7 +51,7 @@ class AsyncDatabaseSessionManager:
             await session.close()
 
 
-async_session_manager = AsyncDatabaseSessionManager()
+async_session_manager = AsyncDatabaseSessionManager(SQL_DATABASE_URL)
 
 Base = declarative_base()
 

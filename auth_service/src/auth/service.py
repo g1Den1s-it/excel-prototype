@@ -17,8 +17,8 @@ async def create_user(user_data: UserSchemas, db: AsyncSession) -> UserSchemas |
 
         db.add(user)
         await db.commit()
-
-        return user.dict(exclude={"password"})
+        user_data = {key: value for key, value in user.__dict__.items() if key != "password"}
+        return UserSchemas(**user_data)
     except:
         await db.rollback()
         return None
@@ -31,7 +31,14 @@ async def get_user_by_email(email: str, db: AsyncSession):
 
         user = result.scalars().first()
 
-        return UserSchemas(**user.__dict__)
+        return UserSchemas(
+            id=user.id,
+            username=user.username,
+            email=user.email,
+            password=user.password,
+            first_name=user.first_name,
+            surname=user.surname
+        )
     except:
         await db.rollback()
         return None
