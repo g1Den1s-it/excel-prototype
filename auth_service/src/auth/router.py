@@ -3,9 +3,14 @@ from fastapi.params import Depends
 from fastapi.routing import APIRouter
 from fastapi import status
 
-from src.auth.schemas import UserSchemas
+from src.auth.schemas import UserSchemas, ValidResponseSchemas
 
-from src.auth.dependencies import valid_create_user, valid_login, valid_new_data
+from src.auth.dependencies import (
+    valid_create_user,
+    valid_login,
+    valid_new_data,
+    valid_token
+)
 
 from src.auth.schemas import TokenSchemas
 
@@ -33,3 +38,10 @@ def login(user: UserSchemas = Depends(valid_login)):
            status_code=status.HTTP_200_OK)
 def update_user(user: UserSchemas = Depends(valid_new_data)):
     return user
+
+
+@auth.post("/check-token/",
+           response_model=dict[str, ValidResponseSchemas],
+           status_code=200)
+async def check_token(valid: ValidResponseSchemas = Depends(valid_token)):
+    return valid

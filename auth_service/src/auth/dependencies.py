@@ -1,3 +1,6 @@
+from pyexpat.errors import messages
+
+from anyio.abc import value
 from fastapi import Header
 from fastapi.params import Depends
 
@@ -6,7 +9,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.auth import service
 from src.database import get_db_session
 from src.auth.schemas import (
-    UserSchemas, TokenSchemas)
+    UserSchemas,
+    TokenSchemas,
+    ValidResponseSchemas)
 from src.auth.exceptions import (
     CreateUserException,
     FieldRequiredException,
@@ -81,3 +86,21 @@ async def valid_new_data(new_user_data: UserSchemas,
         raise NotUpdateUserError()
 
     return user
+
+
+async def valid_token(token: TokenSchemas) -> dict[str, ValidResponseSchemas]:
+    valid_dict = {}
+
+    for key, value in token.__dict__.items():
+        if value is not None:
+            is_valid = JWTToken.is_valid_token(value)
+            response = ValidResponseSchemas(
+                valid=is_valid,
+                message=f"{key} is {'valid' if is_valid else 'invalid or expired'}"
+            )
+            valid_dict[key] = response
+        else:
+            valid_dict[key] = ValidResponseSchemas(valid=False, message=f"{key} is missing")
+
+    return valid_dict
+
