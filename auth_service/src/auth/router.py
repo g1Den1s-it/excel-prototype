@@ -9,7 +9,8 @@ from src.auth.dependencies import (
     valid_create_user,
     valid_login,
     valid_new_data,
-    valid_token
+    valid_token,
+    valid_refresh
 )
 
 from src.auth.schemas import TokenSchemas
@@ -45,3 +46,11 @@ def update_user(user: UserSchemas = Depends(valid_new_data)):
            status_code=200)
 async def check_token(valid: ValidResponseSchemas = Depends(valid_token)):
     return valid
+
+
+@auth.post("/refresh-token/",
+           response_model=TokenSchemas,
+           response_model_exclude_none=True,
+           status_code=200)
+async def refresh_token(token: TokenSchemas = Depends(valid_refresh)):
+    return token

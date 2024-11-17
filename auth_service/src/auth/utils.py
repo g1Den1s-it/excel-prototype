@@ -19,7 +19,7 @@ class PasswordHax:
 
 class JWTToken:
     @staticmethod
-    def create_access_token( user_id: int, **kwargs) -> str:
+    def create_access_token(user_id: int, **kwargs) -> str:
         # "sub": "1234567890",
         # "iss": "https://your-auth-server.com",
         # "aud": "https://your-api.com",

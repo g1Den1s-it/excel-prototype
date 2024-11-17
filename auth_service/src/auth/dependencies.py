@@ -104,3 +104,13 @@ async def valid_token(token: TokenSchemas) -> dict[str, ValidResponseSchemas]:
 
     return valid_dict
 
+
+async def valid_refresh(token: TokenSchemas) -> TokenSchemas:
+    if not JWTToken.is_valid_token(token.refresh_token):
+        return InvalidToken()
+
+    payload = JWTToken.get_payload(token.refresh_token)
+
+    access_token = JWTToken.create_access_token(int(payload['sub']))
+
+    return TokenSchemas(access_token=access_token).dict(exclude_none=True)
