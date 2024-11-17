@@ -43,3 +43,21 @@ class NotCreatedTokensError(HTTPException):
     def __init__(self):
         self.message = "Can not create tokens for the user!"
         super().__init__(status_code=500, detail=self.message)
+
+
+class NotAuthorizationException(HTTPException):
+    def __init__(self):
+        self.message = "User not authorization!"
+        super().__init__(status_code=401, detail=self.message)
+
+
+class InvalidToken(HTTPException):
+    def __init__(self):
+        self.message = "Invalid token"
+        super().__init__(status_code=401, detail=self.message)
+
+
+class NotUpdateUserError(HTTPException):
+    def __init__(self):
+        self.message = "can not update user!"
+        super().__init__(status_code=500, detail=self.message)

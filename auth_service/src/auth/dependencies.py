@@ -1,3 +1,4 @@
+from fastapi import Header
 from fastapi.params import Depends
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,10 +12,25 @@ from src.auth.exceptions import (
     FieldRequiredException,
     InvalidEmailException,
     InvalidPasswordException,
-    NotCreatedTokensError)
+    NotCreatedTokensError,
+    NotAuthorizationException,
+    InvalidToken,
+    NotUpdateUserError)
 from src.auth.service import (get_user_by_email)
 from src.auth.utils import PasswordHax, JWTToken
 
+
+def check_authorization(authorization: str = Header(None)) -> bool:
+    if not authorization:
+        raise NotAuthorizationException()
+
+    if not authorization.startswith("Bearer "):
+        raise InvalidToken()
+
+    if not JWTToken.is_valid_token(authorization.split(" ")[1]):
+        raise InvalidToken()
+
+    return True
 
 # create
 async def valid_create_user(user_data: UserSchemas,
@@ -23,10 +39,8 @@ async def valid_create_user(user_data: UserSchemas,
     if not user:
         raise CreateUserException()
     return user
-# Read
-# Update
-# Delete
-# Login
+
+
 async def valid_login(user_data: UserSchemas,
                       db: AsyncSession = Depends(get_db_session)) -> TokenSchemas:
     if not user_data.email  and not user_data.password:
@@ -49,3 +63,21 @@ async def valid_login(user_data: UserSchemas,
 
     return tokens
 
+
+async def valid_new_data(new_user_data: UserSchemas,
+                   authorization: str = Header(None),
+                   db: AsyncSession = Depends(get_db_session)) -> UserSchemas:
+
+    check_authorization(authorization)
+
+    user_payload = JWTToken.get_payload(authorization.split(" ")[1])
+
+    if not user_payload:
+        raise InvalidToken()
+
+    user: UserSchemas = await service.update_user(int(user_payload["sub"]),new_user_data, db)
+
+    if not user:
+        raise NotUpdateUserError()
+
+    return user

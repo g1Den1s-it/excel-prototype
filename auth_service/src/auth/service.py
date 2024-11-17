@@ -1,4 +1,5 @@
-from sqlalchemy import select
+from anyio.abc import value
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth.models import User
@@ -40,5 +41,25 @@ async def get_user_by_email(email: str, db: AsyncSession):
             surname=user.surname
         )
     except:
+        await db.rollback()
+        return None
+
+
+async def update_user(user_id: int, user: UserSchemas, db: AsyncSession) -> UserSchemas | None:
+    try:
+        update_data = {key: value for key, value in user.dict(exclude_none=True).items()}
+        query = update(User).where(User.id == user_id).values(**update_data)
+
+        await db.execute(query)
+        await db.commit()
+
+        user_query = select(User).where(User.id == user_id)
+
+        user_instance = await db.execute(user_query)
+        user_instance = user_instance.scalars().first()
+
+        user_data = {key: value for key, value in user_instance.__dict__.items() if key != "password"}
+        return UserSchemas(**user_data)
+    except Exception as e:
         await db.rollback()
         return None

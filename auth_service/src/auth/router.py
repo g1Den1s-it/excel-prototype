@@ -5,7 +5,7 @@ from fastapi import status
 
 from src.auth.schemas import UserSchemas
 
-from src.auth.dependencies import valid_create_user, valid_login
+from src.auth.dependencies import valid_create_user, valid_login, valid_new_data
 
 from src.auth.schemas import TokenSchemas
 
@@ -26,6 +26,10 @@ async def create_user(user: UserSchemas = Depends(valid_create_user)):
           status_code=status.HTTP_200_OK)
 def login(user: UserSchemas = Depends(valid_login)):
     return user
+
 # Update
-# Delete
-# logout
+@auth.put("/update/",
+           response_model=UserSchemas,
+           status_code=status.HTTP_200_OK)
+def update_user(user: UserSchemas = Depends(valid_new_data)):
+    return user

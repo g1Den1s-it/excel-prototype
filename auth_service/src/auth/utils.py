@@ -1,4 +1,5 @@
 import datetime
+from pydoc import plain
 
 from jose import jwt
 from passlib.apps import custom_app_context
@@ -30,7 +31,7 @@ class JWTToken:
         # "jti": "unique-token-id-123"
         to_encode = {k: v for k, v in kwargs}
         to_encode["type"] = 'access'
-        to_encode['sub'] = user_id
+        to_encode['sub'] = str(user_id)
 
         expire = (datetime.datetime.now(datetime.UTC) +
                   datetime.timedelta(minutes=jwt_token_config.ACCESS_TOKEN_EXPIRE_MIN))
@@ -46,7 +47,7 @@ class JWTToken:
     def create_refresh_token(user_id: int, email: str, **kwargs) ->  str:
         to_encode = {k: v for k, v in kwargs}
         to_encode["type"] = 'refresh'
-        to_encode["sub"] = user_id
+        to_encode["sub"] = str(user_id)
         to_encode["email"] = email
 
         expire = (datetime.datetime.now(datetime.UTC) +
@@ -57,3 +58,37 @@ class JWTToken:
         refresh_token = jwt.encode(to_encode, jwt_token_config.JWT_SECRET, jwt_token_config.JWT_ALG)
 
         return refresh_token
+
+
+    @staticmethod
+    def is_valid_token(token: str) -> bool:
+        try:
+            payload: dict = jwt.decode(token,
+                                       jwt_token_config.JWT_SECRET,
+                                       jwt_token_config.JWT_ALG)
+
+            if payload.get("type") not in {"access", "refresh"}:
+                return False
+
+            exp = payload.get("expire")
+            exp = datetime.datetime.strptime(exp, "%Y-%m-%d %H:%M:%S")
+            exp = exp.replace(tzinfo=datetime.UTC)
+
+            if exp < datetime.datetime.now(datetime.UTC):
+                return False
+
+            return True
+        except:
+            return False
+
+
+    @staticmethod
+    def get_payload(token: str) -> dict | None:
+        try:
+            payload: dict = jwt.decode(token,
+                                       jwt_token_config.JWT_SECRET,
+                                       jwt_token_config.JWT_ALG)
+
+            return payload
+        except:
+            return None
