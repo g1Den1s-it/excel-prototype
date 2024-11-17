@@ -1,5 +1,4 @@
 import datetime
-from pydoc import plain
 
 from jose import jwt
 from passlib.apps import custom_app_context
@@ -71,7 +70,12 @@ class JWTToken:
                 return False
 
             exp = payload.get("expire")
-            exp = datetime.datetime.strptime(exp, "%Y-%m-%d %H:%M:%S")
+
+            if exp:
+                exp = datetime.datetime.strptime(exp, "%Y-%m-%d %H:%M:%S")
+            else:
+                return False
+
             exp = exp.replace(tzinfo=datetime.UTC)
 
             if exp < datetime.datetime.now(datetime.UTC):
@@ -83,7 +87,7 @@ class JWTToken:
 
 
     @staticmethod
-    def get_payload(token: str) -> dict | None:
+    def get_payload(token: str) -> dict[str, str] | None:
         try:
             payload: dict = jwt.decode(token,
                                        jwt_token_config.JWT_SECRET,

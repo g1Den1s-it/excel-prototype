@@ -1,4 +1,5 @@
-from alembic.util import status
+from typing import Annotated
+
 from fastapi.params import Depends
 from fastapi.routing import APIRouter
 from fastapi import status
@@ -23,28 +24,28 @@ auth = APIRouter(prefix="/auth")
 @auth.post("/create-user/",
             response_model=UserSchemas,
             status_code=status.HTTP_201_CREATED)
-async def create_user(user: UserSchemas = Depends(valid_create_user)):
+async def create_user(user: Annotated[UserSchemas, Depends(valid_create_user)]):
     return user
 
 # Login
 @auth.post("/login/",
           response_model=TokenSchemas,
           status_code=status.HTTP_200_OK)
-def login(user: UserSchemas = Depends(valid_login)):
+def login(user: Annotated[UserSchemas, Depends(valid_login)]):
     return user
 
 # Update
 @auth.put("/update/",
            response_model=UserSchemas,
            status_code=status.HTTP_200_OK)
-def update_user(user: UserSchemas = Depends(valid_new_data)):
+def update_user(user: Annotated[UserSchemas, Depends(valid_new_data)]):
     return user
 
 
 @auth.post("/check-token/",
            response_model=dict[str, ValidResponseSchemas],
            status_code=200)
-async def check_token(valid: ValidResponseSchemas = Depends(valid_token)):
+async def check_token(valid: Annotated[ValidResponseSchemas, Depends(valid_token)]):
     return valid
 
 
@@ -52,5 +53,5 @@ async def check_token(valid: ValidResponseSchemas = Depends(valid_token)):
            response_model=TokenSchemas,
            response_model_exclude_none=True,
            status_code=200)
-async def refresh_token(token: TokenSchemas = Depends(valid_refresh)):
+async def refresh_token(token: Annotated[TokenSchemas, Depends(valid_refresh)]):
     return token

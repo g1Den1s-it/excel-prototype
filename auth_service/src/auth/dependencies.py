@@ -1,6 +1,5 @@
-from pyexpat.errors import messages
+from typing import Annotated
 
-from anyio.abc import value
 from fastapi import Header
 from fastapi.params import Depends
 
@@ -20,7 +19,8 @@ from src.auth.exceptions import (
     NotCreatedTokensError,
     NotAuthorizationException,
     InvalidToken,
-    NotUpdateUserError)
+    NotUpdateUserError,
+    NotRefreshToken)
 from src.auth.service import (get_user_by_email)
 from src.auth.utils import PasswordHax, JWTToken
 
@@ -39,7 +39,7 @@ def check_authorization(authorization: str = Header(None)) -> bool:
 
 # create
 async def valid_create_user(user_data: UserSchemas,
-                      db:AsyncSession = Depends(get_db_session)) -> UserSchemas:
+                      db: Annotated[AsyncSession, Depends(get_db_session)]) -> UserSchemas:
     user = await service.create_user(user_data, db)
     if not user:
         raise CreateUserException()
@@ -47,8 +47,8 @@ async def valid_create_user(user_data: UserSchemas,
 
 
 async def valid_login(user_data: UserSchemas,
-                      db: AsyncSession = Depends(get_db_session)) -> TokenSchemas:
-    if not user_data.email  and not user_data.password:
+                      db: Annotated[AsyncSession, Depends(get_db_session)]) -> TokenSchemas:
+    if not user_data.email or not user_data.password:
         raise FieldRequiredException("'Email' and 'Password' are required!")
 
     user: UserSchemas | None = await get_user_by_email(user_data.email, db)
@@ -56,12 +56,22 @@ async def valid_login(user_data: UserSchemas,
     if not user:
         raise InvalidEmailException()
 
-    if not PasswordHax.verify_password(user_data.password, user.password):
-        return InvalidPasswordException()
+    if not user_data.password or not user.password:
+        raise InvalidPasswordException()
 
-    tokens = TokenSchemas()
-    tokens.access_token = JWTToken.create_access_token(user.id)
-    tokens.refresh_token = JWTToken.create_refresh_token(user.id, user.email)
+    if not PasswordHax.verify_password(user_data.password, user.password):
+        raise InvalidPasswordException()
+
+    if not user.email:
+        raise FieldRequiredException("'Email' is required!")
+
+    if not user.id:
+        raise FieldRequiredException("'Id' is required!")
+
+    tokens = TokenSchemas(
+        access_token=JWTToken.create_access_token(user.id),
+        refresh_token=JWTToken.create_refresh_token(user.id, user.email)
+    )
 
     if not tokens.access_token and not tokens.refresh_token:
         raise NotCreatedTokensError()
@@ -70,8 +80,8 @@ async def valid_login(user_data: UserSchemas,
 
 
 async def valid_new_data(new_user_data: UserSchemas,
-                   authorization: str = Header(None),
-                   db: AsyncSession = Depends(get_db_session)) -> UserSchemas:
+                        db: Annotated[AsyncSession, Depends(get_db_session)],
+                        authorization: str = Header(None)) -> UserSchemas:
 
     check_authorization(authorization)
 
@@ -80,7 +90,7 @@ async def valid_new_data(new_user_data: UserSchemas,
     if not user_payload:
         raise InvalidToken()
 
-    user: UserSchemas = await service.update_user(int(user_payload["sub"]),new_user_data, db)
+    user = await service.update_user(int(user_payload["sub"]),new_user_data, db)
 
     if not user:
         raise NotUpdateUserError()
@@ -106,11 +116,17 @@ async def valid_token(token: TokenSchemas) -> dict[str, ValidResponseSchemas]:
 
 
 async def valid_refresh(token: TokenSchemas) -> TokenSchemas:
+    if not token.refresh_token:
+        raise NotRefreshToken()
+
     if not JWTToken.is_valid_token(token.refresh_token):
-        return InvalidToken()
+        raise InvalidToken()
 
     payload = JWTToken.get_payload(token.refresh_token)
 
+    if not payload:
+        raise InvalidToken()
+
     access_token = JWTToken.create_access_token(int(payload['sub']))
 
-    return TokenSchemas(access_token=access_token).dict(exclude_none=True)
+    return TokenSchemas(access_token=access_token, refresh_token=None)

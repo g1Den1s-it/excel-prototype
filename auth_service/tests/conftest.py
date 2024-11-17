@@ -5,7 +5,7 @@ from typing import AsyncGenerator
 import pytest_asyncio
 from dotenv import load_dotenv
 from httpx import AsyncClient, ASGITransport
-from sqlalchemy.ext.asyncio import AsyncSession, AsyncEngine
+from sqlalchemy.ext.asyncio import AsyncSession, AsyncEngine, AsyncConnection
 
 from src.database import AsyncDatabaseSessionManager, get_db_session, Base
 from src.main import app
@@ -55,7 +55,7 @@ async def create_db_table(event_loop):
 
 
 @pytest_asyncio.fixture(scope="function")
-async def async_connection() -> AsyncGenerator[AsyncEngine, None]:
+async def async_connection() -> AsyncGenerator[AsyncConnection, None]:
     async with session_manager.connect() as conn:
         yield conn
 

@@ -1,5 +1,3 @@
-from pyexpat.errors import messages
-
 from fastapi.exceptions import HTTPException
 
 class LoginValidateException(HTTPException):
@@ -61,3 +59,9 @@ class NotUpdateUserError(HTTPException):
     def __init__(self):
         self.message = "can not update user!"
         super().__init__(status_code=500, detail=self.message)
+
+
+class  NotRefreshToken(HTTPException):
+    def __init__(self):
+        self.message = "Refresh Token is required!"
+        super().__init__(status_code=400, detail=self.message)
