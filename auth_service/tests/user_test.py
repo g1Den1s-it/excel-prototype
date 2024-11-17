@@ -1,6 +1,7 @@
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncEngine
+from sqlalchemy.util import await_only
 
 
 class TestUser:
@@ -49,3 +50,12 @@ class TestUser:
         assert res.status_code == 200
         assert res.json().get("access_token")['valid'] == True
         assert res.json().get("refresh_token")['valid'] == False
+
+
+    @pytest.mark.asyncio
+    async def test_refresh_token(self, ac: AsyncClient):
+        res = await ac.post("/auth/refresh-token/",
+                            json={"refresh_token": TestUser.login_response.get("refresh_token")})
+
+        assert res.status_code == 200
+        assert res.json().get("access_token")
